@@ -1,0 +1,20 @@
+add opcode 000000 function 100000
+sub opcode 000000 function 100010
+mul opcode 011100 function 000010
+slt opcode 000000 function 101010
+and opcode 000000 function 100100
+or  opcode 000000 function 100101
+xor opcode 000000 function 100110
+addi opcode 001000 
+lw  opcode 100011
+sw  opcode 101011 
+andi opcode 001100 
+divu opcode 000000 function 011011
+beq opcode 000100
+j opcode 000010
+
+text would start at 0x00400000 position very important
+that is 4194304
+
+sll opcode 000000 function 000000
+srl opcode 000000 function 000010
