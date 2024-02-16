@@ -4,8 +4,21 @@ class Instruction_Memory:
         
 
 
-    def Processor(self):
-        return 
+    def Processor(self,opcode,rs,rt,rd,jump,shamt,ff,imm):
+        self.opcode=self.PC[0:6]
+        if(self.opcode=="000000"): #Rformat
+            self.rs=self.PC[6:11]
+            self.rt=self.PC[11:16]
+            self.rd=self.PC[16:21]
+            self.shamt=self.PC[21:26]
+            self.ff=self.PC[26:]
+        elif(self.opcode==""): #Iformat
+            self.rs=self.PC[6:11]
+            self.rt=self.PC[11:16]
+            self.imm=self.PC[16:]
+
+        else:             #jump
+            self.jump=self.PC[6:] 
 
 
 class Register:
@@ -27,3 +40,6 @@ class Data_Memory:
         self.address=""
         self.readData=""
         self.writeData=""
+
+    def do_task(self):
+        
