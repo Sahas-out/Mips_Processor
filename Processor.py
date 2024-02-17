@@ -10,13 +10,13 @@ class Instruction_Memory:                                                   #INS
     # store instructions import file
     def store_instructions(self):
         for line in fileinput.input(files="machinecode.txt"):
-            if(line=='\n'):
+            if(line == '\n'):
                  break
             else:
-                self.ins_mem.append(line)
+                self.ins_mem.append(line.rstrip())
 
     def fetch_instruction(self,Pc):
-        self.instruction = self.ins_mem[int(Pc,2)-4194304]
+        self.instruction = self.ins_mem[(int(Pc,2)-4194304)//4]
 
 class Register:                                                            #REGISTERS
     def __init__(self):
@@ -30,20 +30,23 @@ class Register:                                                            #REGI
     def read_data(self,Instruction_25_21,Instruction_20_16,Instruction_15_11,RegDst):
         self.Readdata1 = self.reg_file[int(Instruction_25_21,2)]
         self.Readdata2 = self.reg_file[int(Instruction_20_16,2)]
-        if(RegDst):
+        if(RegDst == '1'):
             self.write_reg = Instruction_15_11
         else:
             self.write_reg = Instruction_20_16
     
     def write_data(self,RegWrite,Readdata,MemtoReg,ALUresult):
-        if(MemtoReg): # Mux with MemtoReg as select line
+        if(MemtoReg == '1'): # Mux with MemtoReg as select line
             Writedata = Readdata
         else:
             Writedata = ALUresult
-        if(RegWrite):
+        if(RegWrite == '1'):
             self.reg_file [int(self.write_reg,2)] = Writedata
         else:
             pass
+    def change_data(self):
+        self.reg_file[17] = IntToBin(0)
+        self.reg_file[18] = IntToBin(1)
 
 class Sign_Extend:                                                      #SIGN_EXTEND                      
     def __init__ (self):
@@ -79,7 +82,7 @@ class ControlUnit:                                                      #CONTROL
         #Each character of binary string correspond some control signal
         self.RegWrite = s[0]
         self.ALUOp    = s[1]
-        self.AluSrc   = s[2]
+        self.ALUSrc   = s[2]
         self.MemWrite = s[3]
         self.MemToReg = s[4]
         self.MemRead  = s[5]
@@ -93,7 +96,7 @@ class ALU:                                                               #ALU
         self.AluResult = IntToBin(0)
     def AluCalculate(self,ALUcontrol,ReadData_1,ReadData_2,ALUSrc,SignImm):
         input_1 = ReadData_1
-        if(ALUSrc): # Mux with ALUSrc as select line
+        if(ALUSrc == '1'): # Mux with ALUSrc as select line
             input_2 = SignImm
         else:
             input_2 = ReadData_2
@@ -119,7 +122,7 @@ class ALU:                                                               #ALU
                 self.AluResult = IntToBin(0)
         else:
             print("Exception ALUcontrol doesnt match wuth any ")
-        if(self.AluResult == 0): # checking if the result is zero
+        if(self.AluResult == IntToBin(0)): # checking if the result is zero
             self.zero = '1'
         else:
             self.zero = '0'
@@ -139,7 +142,7 @@ class ALUcontrol:                                                      #ALUcontr
             "011011" : "1010", # divide operation 
         }
         ALUcontrol_map = {
-            "10" : function_map[Instruction_5_0], # R format 
+            "10" : function_map.get(Instruction_5_0), # R format 
             "01" : "0110", #substract on beq and j
             "00" : "0010", # add operation on load, store and addi
             "11" : "0000", # and operation on andi
@@ -155,11 +158,11 @@ class PC:                                                             #PC
         Instruction_0_25 = Instruction_0_25 + "00" #left shift by 2
         Instruction_0_25 = self.counter[28:32] + Instruction_0_25 # adding 4 MSB from PC + 4
         SignImm = SignImm[2:] + "00" #left shift by 2
-        if(int(Branch,2) and int(Zero,2)): # implementaion of Mux with PcSrc as select line
+        if(Branch == '1' and Zero == '1'): # implementaion of Mux with PcSrc as select line
             self.counter = IntToBin( int(self.counter) + int(SignImm,2) ) # doing PC+4 +imm*4
         else:
             self.counter = self.counter
-        if(int(Jump,2)): # implemenation of Mux with Jump as select line
+        if(Jump == '1'): # implemenation of Mux with Jump as select line
             self.counter = Instruction_0_25 # assinging Pc to Jump address after concatenation
         else:
             self.counter = self.counter
@@ -171,16 +174,17 @@ class Data_Memory:                                                 #DATA MEMORY
         self.Data_memory =   [IntToBin(0) for i in range(32)]
 
     def read_Or_write(self,MemWrite,MemRead,Address,Writedata):
-        if(MemRead):
-            self.readData = self.Data_memory[Address]
-        elif(MemWrite):
-            self.Data_memory[Address] =  Writedata 
+        if(MemRead == '1'):
+            self.readData = self.Data_memory[int(Address,2)]
+        elif(MemWrite == '1'):
+            self.Data_memory[int(Address,2)] =  Writedata 
         else:
             pass
     
     def change_data(self):
         #example self.DataMemory[16] = IntToBin(9) to store the value 9 at address 26
-        pass
+        self.Data_memory[0] = IntToBin(30)
+        self.Data_memory[1] = IntToBin(60)
 
 instruction_memory = Instruction_Memory()     # creating objects for different components in MIPS
 registers = Register()  
@@ -192,6 +196,8 @@ data_memory = Data_Memory()
 sign_extend = Sign_Extend()
 
 instruction_memory.store_instructions()        # storing instructions from "machinecode.txt"
+registers.change_data()                        # changing data in registers as per input 
+data_memory.change_data()                      # changing data in memory as per input
 last_step_no = len(instruction_memory.ins_mem) # finding out how many instructions are to be executed
 
 for step in range(last_step_no):
