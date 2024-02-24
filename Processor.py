@@ -9,7 +9,7 @@ class Instruction_Memory:                                                   #INS
 
     # store instructions import file
     def store_instructions(self):
-        for line in fileinput.input(files="machinecode.txt"):
+        for line in fileinput.input(files="SecondProg.txt"):
             if(line == '\n'):
                  break
             else:
@@ -45,8 +45,7 @@ class Register:                                                            #REGI
         else:
             pass
     def change_data(self):
-        self.reg_file[17] = IntToBin(0)
-        self.reg_file[18] = IntToBin(1)
+        self.reg_file[16] = IntToBin(268500992) # using s0 as reg which stores data_pointer(from where .data begins)
 
 class Sign_Extend:                                                      #SIGN_EXTEND                      
     def __init__ (self):
@@ -76,7 +75,8 @@ class ControlUnit:                                                      #CONTROL
             "101011" : "0-00-1-1-0-0-0-1-0", #store instruction
             "000100" : "0-01-0-0-0-0-1-0-0", #branch on equal instruction
             "000010" : "0-01-0-0-0-0-0-0-1", #jump instruction
-            "001100" : "1-11-1-0-0-0-0-0-0"  #addi instruction
+            "001100" : "1-11-1-0-0-0-0-0-0", #andi instruction
+            "000101" : "1-10-0-0-0-0-0-1-0"  #div instrusction
         }
         s=Signals_map[Instructions_26_31].split('-')
         #Each character of binary string correspond some control signal
@@ -102,19 +102,19 @@ class ALU:                                                               #ALU
             input_2 = ReadData_2
         
         if(ALUcontrol == "0010"): #add
-            self.AluResult = IntToBin( int(input_1) + int(input_2) ) 
+            self.AluResult = IntToBin( int(input_1,2) + int(input_2,2) ) 
         elif(ALUcontrol == "0110"): #subtract
-            self.AluResult = IntToBin( int(input_1) - int(input_2) ) 
+            self.AluResult = IntToBin( int(input_1,2) - int(input_2,2) ) 
         elif(ALUcontrol == "1111"): #mul
-            self.AluResult = IntToBin( int(input_1) * int(input_2) )
+            self.AluResult = IntToBin( int(input_1,2) * int(input_2,2) )
         elif(ALUcontrol == "0000"): #bitwise and
-            self.AluResult = IntToBin( int(input_1) & int(input_2) )
+            self.AluResult = IntToBin( int(input_1,2) & int(input_2,2) )
         elif(ALUcontrol == "0001"): #bitwise or
-            self.AluResult = IntToBin( int(input_1) | int(input_2) )  
+            self.AluResult = IntToBin( int(input_1,2) | int(input_2,2) )  
         elif(ALUcontrol == "1110"): #bitwise xor
-            self.AluResult = IntToBin( int(input_1) ^ int(input_2) )    
+            self.AluResult = IntToBin( int(input_1,2) ^ int(input_2,2) )    
         elif(ALUcontrol == "1010"):# floor division
-            self.AluResult = IntToBin( int(input_1) / int(input_2) ) 
+            self.AluResult = IntToBin( int(input_1,2) // int(input_2,2) ) 
         elif(ALUcontrol == "0111"):# set on less than
             if(input_1 < input_2):
                 self.AluResult = IntToBin(1)
@@ -156,10 +156,10 @@ class PC:                                                             #PC
     def change(self,Branch,Zero,SignImm,Jump,Instruction_0_25):
         self.counter = IntToBin(int(self.counter,2)+4) # doing PC + 4
         Instruction_0_25 = Instruction_0_25 + "00" #left shift by 2
-        Instruction_0_25 = self.counter[28:32] + Instruction_0_25 # adding 4 MSB from PC + 4
+        Instruction_0_25 = self.counter[0:5] + Instruction_0_25 # adding 4 MSB from PC + 4
         SignImm = SignImm[2:] + "00" #left shift by 2
         if(Branch == '1' and Zero == '1'): # implementaion of Mux with PcSrc as select line
-            self.counter = IntToBin( int(self.counter) + int(SignImm,2) ) # doing PC+4 +imm*4
+            self.counter = IntToBin( int(self.counter,2) + int(SignImm,2) ) # doing PC+4 +imm*4
         else:
             self.counter = self.counter
         if(Jump == '1'): # implemenation of Mux with Jump as select line
@@ -172,19 +172,19 @@ class Data_Memory:                                                 #DATA MEMORY
         
         self.readData = IntToBin(0)
         self.Data_memory =   [IntToBin(0) for i in range(32)]
+        self.data_pointer = 268500992         #(0x10010000)          # this stores the address in base 10 of data pointer which is the position from where data is read and written in memory
 
     def read_Or_write(self,MemWrite,MemRead,Address,Writedata):
         if(MemRead == '1'):
-            self.readData = self.Data_memory[int(Address,2)]
+            self.readData = self.Data_memory[(int(Address,2)-self.data_pointer)//4]
         elif(MemWrite == '1'):
-            self.Data_memory[int(Address,2)] =  Writedata 
+            self.Data_memory[(int(Address,2)-self.data_pointer)//4] =  Writedata 
         else:
             pass
     
     def change_data(self):
-        #example self.DataMemory[16] = IntToBin(9) to store the value 9 at address 26
-        self.Data_memory[0] = IntToBin(30)
-        self.Data_memory[1] = IntToBin(60)
+        self.Data_memory[0] = IntToBin(15)    # modify the value of n here
+        self.Data_memory[1] = IntToBin(1)    # intialize the value of result here
 
 instruction_memory = Instruction_Memory()     # creating objects for different components in MIPS
 registers = Register()  
@@ -198,10 +198,12 @@ sign_extend = Sign_Extend()
 instruction_memory.store_instructions()        # storing instructions from "machinecode.txt"
 registers.change_data()                        # changing data in registers as per input 
 data_memory.change_data()                      # changing data in memory as per input
-last_step_no = len(instruction_memory.ins_mem) # finding out how many instructions are to be executed
-
-for step in range(last_step_no):
-
+last_ins = IntToBin((len(instruction_memory.ins_mem)*4)+int(pc.counter,2)) # finding out how many instructions are to be executed
+#step = int(pc.counter,2)
+while(pc.counter!=last_ins):
+    # step = int(pc.counter,2)
+    # print(f"{int(registers.reg_file[11],2)}",end="             ")
+    #print(f"{(int(pc.counter,2)-4194304)//4}        {int(registers.reg_file[8],2)}")
     instruction_memory.fetch_instruction(pc.counter)                                                                          # this opeartion fetches the instruction at current pc value
     instruction = instruction_memory.instruction 
     control_unit.GenerateControlSignals(instruction[:6])                                                                      # first 6 bits goes to control unit and control signals are genrated
@@ -213,7 +215,7 @@ for step in range(last_step_no):
     registers.write_data(control_unit.RegWrite,data_memory.readData,control_unit.MemToReg,alu.AluResult)                      # writing back to reg if had to
     pc.change(control_unit.Branch,alu.zero,sign_extend.SignImm,control_unit.jump,instruction[6:32])                           # changing PC as per instruction
     
-    
+print("result is",int(data_memory.Data_memory[1],2))    
 
 
 
