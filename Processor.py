@@ -9,7 +9,7 @@ class Instruction_Memory:                                                   #INS
 
     # store instructions import file
     def store_instructions(self):
-        for line in fileinput.input(files="SecondProg.txt"):
+        for line in fileinput.input(files="ThirdProg.txt"):
             if(line == '\n'):
                  break
             else:
@@ -183,8 +183,17 @@ class Data_Memory:                                                 #DATA MEMORY
             pass
     
     def change_data(self):
-        self.Data_memory[0] = IntToBin(15)    # modify the value of n here
-        self.Data_memory[1] = IntToBin(1)    # intialize the value of result here
+        # --------Edit below for fibonaci and factorial programs ------------
+        
+        # self.Data_memory[0] = IntToBin(15)    # modify the value of n here
+        # self.Data_memory[1] = IntToBin(1)    # intialize the value of result here
+        
+        #-------------For Linear Search--------------------------------------- 
+        self.Data_memory[0] = IntToBin(4)     # specify the numbers of integers in array
+        self.Data_memory[1] = IntToBin(0)     # inializing result with 0
+        self.Data_memory[2] = IntToBin(3)     # specify the element to search for
+        # now give the elements of the array  below
+        self.Data_memory[3:3+int(self.Data_memory[0],2)] = list(map(IntToBin,[0,3,3,6]))
 
 instruction_memory = Instruction_Memory()     # creating objects for different components in MIPS
 registers = Register()  
