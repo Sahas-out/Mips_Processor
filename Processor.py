@@ -9,7 +9,7 @@ class Instruction_Memory:                                                   #INS
 
     # store instructions import file
     def store_instructions(self):
-        for line in fileinput.input(files="ThirdProg.txt"):
+        for line in fileinput.input(files="fact.txt"):
             if(line == '\n'):
                  break
             else:
@@ -185,46 +185,47 @@ class Data_Memory:                                                 #DATA MEMORY
     def change_data(self):
         # --------Edit below for fibonaci and factorial programs ------------
         
-        # self.Data_memory[0] = IntToBin(15)    # modify the value of n here
-        # self.Data_memory[1] = IntToBin(1)    # intialize the value of result here
+        self.Data_memory[0] = IntToBin(10)    # modify the value of n here
+        self.Data_memory[1] = IntToBin(1)    # intialize the value of result here
         
         #-------------For Linear Search--------------------------------------- 
-        self.Data_memory[0] = IntToBin(4)     # specify the numbers of integers in array
-        self.Data_memory[1] = IntToBin(0)     # inializing result with 0
-        self.Data_memory[2] = IntToBin(3)     # specify the element to search for
-        # now give the elements of the array  below
-        self.Data_memory[3:3+int(self.Data_memory[0],2)] = list(map(IntToBin,[0,3,3,6]))
+        # self.Data_memory[0] = IntToBin(4)     # specify the numbers of integers in array
+        # self.Data_memory[1] = IntToBin(0)     # inializing result with 0
+        # self.Data_memory[2] = IntToBin(3)     # specify the element to search for
+        # # now give the elements of the array  below
+        # self.Data_memory[3:3+int(self.Data_memory[0],2)] = list(map(IntToBin,[0,3,3,6]))
 
-instruction_memory = Instruction_Memory()     # creating objects for different components in MIPS
-registers = Register()  
-control_unit = ControlUnit()
-alu = ALU()
-alu_control = ALUcontrol()
-pc = PC()
-data_memory = Data_Memory()
-sign_extend = Sign_Extend()
+if __name__ == "__main__" :                                         # MAIN CODE
+    instruction_memory = Instruction_Memory()     # creating objects for different components in MIPS
+    registers = Register()  
+    control_unit = ControlUnit()
+    alu = ALU()
+    alu_control = ALUcontrol()
+    pc = PC()
+    data_memory = Data_Memory()
+    sign_extend = Sign_Extend()
 
-instruction_memory.store_instructions()        # storing instructions from "machinecode.txt"
-registers.change_data()                        # changing data in registers as per input 
-data_memory.change_data()                      # changing data in memory as per input
-last_ins = IntToBin((len(instruction_memory.ins_mem)*4)+int(pc.counter,2)) # finding out how many instructions are to be executed
-#step = int(pc.counter,2)
-while(pc.counter!=last_ins):
-    # step = int(pc.counter,2)
-    # print(f"{int(registers.reg_file[11],2)}",end="             ")
-    #print(f"{(int(pc.counter,2)-4194304)//4}        {int(registers.reg_file[8],2)}")
-    instruction_memory.fetch_instruction(pc.counter)                                                                          # this opeartion fetches the instruction at current pc value
-    instruction = instruction_memory.instruction 
-    control_unit.GenerateControlSignals(instruction[:6])                                                                      # first 6 bits goes to control unit and control signals are genrated
-    alu_control.Generate_ALU_control(control_unit.ALUOp,instruction[26:32])                                                   # alu input signals are generated 
-    registers.read_data(instruction[6:11],instruction[11:16],instruction[16:21],control_unit.RegDst)                          # decode stage execution
-    sign_extend.extend(instruction[16:32])                                                                                    # it extends the last 16 bits of instruction to 32 bits by adding 0's
-    alu.AluCalculate(alu_control.ALUcontrol,registers.Readdata1,registers.Readdata2,control_unit.ALUSrc,sign_extend.SignImm)  # alu computes the value  desired
-    data_memory.read_Or_write(control_unit.MemWrite,control_unit.MemRead,alu.AluResult,registers.Readdata2)                   # writting or reading from memory
-    registers.write_data(control_unit.RegWrite,data_memory.readData,control_unit.MemToReg,alu.AluResult)                      # writing back to reg if had to
-    pc.change(control_unit.Branch,alu.zero,sign_extend.SignImm,control_unit.jump,instruction[6:32])                           # changing PC as per instruction
-    
-print("result is",int(data_memory.Data_memory[1],2))    
+    instruction_memory.store_instructions()        # storing instructions from "machinecode.txt"
+    registers.change_data()                        # changing data in registers as per input 
+    data_memory.change_data()                      # changing data in memory as per input
+    last_ins = IntToBin((len(instruction_memory.ins_mem)*4)+int(pc.counter,2)) # finding out what is the last instruction to be executed
+    #step = int(pc.counter,2)
+    while(pc.counter!=last_ins):
+        # step = int(pc.counter,2)
+        # print(f"{int(registers.reg_file[11],2)}",end="             ")
+        #print(f"{(int(pc.counter,2)-4194304)//4}        {int(registers.reg_file[8],2)}")
+        instruction_memory.fetch_instruction(pc.counter)                                                                          # this opeartion fetches the instruction at current pc value
+        instruction = instruction_memory.instruction 
+        control_unit.GenerateControlSignals(instruction[:6])                                                                      # first 6 bits goes to control unit and control signals are genrated
+        alu_control.Generate_ALU_control(control_unit.ALUOp,instruction[26:32])                                                   # alu input signals are generated 
+        registers.read_data(instruction[6:11],instruction[11:16],instruction[16:21],control_unit.RegDst)                          # decode stage execution
+        sign_extend.extend(instruction[16:32])                                                                                    # it extends the last 16 bits of instruction to 32 bits by adding 0's
+        alu.AluCalculate(alu_control.ALUcontrol,registers.Readdata1,registers.Readdata2,control_unit.ALUSrc,sign_extend.SignImm)  # alu computes the value  desired
+        data_memory.read_Or_write(control_unit.MemWrite,control_unit.MemRead,alu.AluResult,registers.Readdata2)                   # writting or reading from memory
+        registers.write_data(control_unit.RegWrite,data_memory.readData,control_unit.MemToReg,alu.AluResult)                      # writing back to reg if had to
+        pc.change(control_unit.Branch,alu.zero,sign_extend.SignImm,control_unit.jump,instruction[6:32])                           # changing PC as per instruction
+
+    print("result is",int(data_memory.Data_memory[1],2))    
 
 
 
